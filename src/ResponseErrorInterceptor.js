@@ -9,7 +9,6 @@ function ResponseErrorInterceptorProvider($injector) {
   var stateName;
 
 
-
   var provider = {
     addErrorHandling: addErrorHandling,
     $get: ['$q', '$rootScope', 'StateChangeErrorHandler', 'AlertService',
@@ -58,11 +57,12 @@ function ResponseErrorInterceptorProvider($injector) {
           var errorData = error.data;
           var customErrorMessages = validator.errorMessage.custom;
 
-          if (customErrorMessages && customErrorMessages.length > 0 && errorData && errorData.code) {
+          if (customErrorMessages && customErrorMessages.length > 0) {
             var filterLength = customErrorMessages.length;
             for (var i = 0; i < filterLength; i++) {
               var filter = customErrorMessages[i];
-              if (filter.status === error.status && filter.code === errorData.code) {
+              if (filter.status === error.status &&
+                ((errorData && filter.code === errorData.code) || (typeof filter.code === 'undefined'))) {
                 return filter.message;
               }
             }
@@ -101,6 +101,9 @@ function ResponseErrorInterceptorProvider($injector) {
    *
    * example for exclude http-status:400 with response error-code:100
    * 'url', 'PATCH', 'error-translation-key', [{status: 400, code: 100, message: 'translation.key}]
+   *
+   * example for exclude http-status:409
+   * 'url', 'PATCH', 'error-translation-key', [{status: 409, message: 'translation.key}]
    *
    * @param errorUrl
    * @param method

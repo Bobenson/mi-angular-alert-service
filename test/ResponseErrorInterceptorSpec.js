@@ -1,7 +1,7 @@
 'use strict';
 
 describe('Service :  ResponseErrorInterceptor', function () {
-  var $rootScope, $q, interceptor, StateChangeErrorHandler, AlertService, youtubeUpdateItemMessages;
+  var $rootScope, $q, interceptor, StateChangeErrorHandler, AlertService, updateItemMessages;
 
   beforeEach(function () {
     angular.mock.module('mi.AlertService');
@@ -40,17 +40,20 @@ describe('Service :  ResponseErrorInterceptor', function () {
 
       angular.mock.module(function (ResponseErrorInterceptorProvider) {
 
-        youtubeUpdateItemMessages = {
+        updateItemMessages = {
           custom: [{
             status: 400,
             code: 100,
             message: 'my custom error message'
+          }, {
+            status: 409,
+            message: 'my custom error message for http status 409'
           }],
           default: 'error default'
         };
 
         ResponseErrorInterceptorProvider.addErrorHandling('dummyUri', 'GET', 'error');
-        ResponseErrorInterceptorProvider.addErrorHandling('dummyFilterUri', 'GET', youtubeUpdateItemMessages);
+        ResponseErrorInterceptorProvider.addErrorHandling('dummyFilterUri', 'GET', updateItemMessages);
         ResponseErrorInterceptorProvider.addErrorHandling('http://dummy.de/list/{vid}', 'GET', 'error getting item');
         ResponseErrorInterceptorProvider.addErrorHandling('http://dummy.de/list?search_term', 'GET', 'error search-param');
         ResponseErrorInterceptorProvider.addErrorHandling('http://dummy.de/list?limit&offset', 'GET', 'error paging-param');
@@ -174,12 +177,26 @@ describe('Service :  ResponseErrorInterceptor', function () {
       expect(AlertService.add.calls.count()).toEqual(1);
     });
 
+    it('should display custom error message for http status without error-code', function () {
+      $rootScope.$broadcast('$stateChangeStart', {name: 'stateName'});
+      $rootScope.$apply();
+      StateChangeErrorHandler.hasStateError.and.returnValue(false);
+
+      interceptor.responseError({
+        config: {url: 'dummyFilterUri', method: 'GET'},
+        data: {message: 'some error'},
+        status: 409
+      });
+      expect(AlertService.add).toHaveBeenCalledWith('danger', 'my custom error message for http status 409');
+      expect(AlertService.add.calls.count()).toEqual(1);
+    });
+
     it('should display default error message if no custom errors are set', function () {
       $rootScope.$broadcast('$stateChangeStart', {name: 'stateName'});
       $rootScope.$apply();
       StateChangeErrorHandler.hasStateError.and.returnValue(false);
 
-      delete youtubeUpdateItemMessages.custom;
+      delete updateItemMessages.custom;
 
       interceptor.responseError({
         config: {url: 'dummyFilterUri', method: 'GET'},
